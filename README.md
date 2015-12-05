@@ -1,6 +1,7 @@
+[![Travis](https://img.shields.io/travis/mmckinst/ansible-playbook-dvwa.svg)](https://travis-ci.org/mmckinst/ansible-playbook-dvwa)
+
 Instructions
 ---
-
 This is the ansilbe playbook used to build
 https://atlas.hashicorp.com/mmckinst/boxes/dvwa . If you downloaded the box from
 hashicorp, you'll want to forward guest port 80 to host port 8080 with
