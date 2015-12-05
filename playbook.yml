@@ -1,0 +1,79 @@
+---
+- hosts: all
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Install packages
+      apt: name={{ item }} state=present update_cache=yes
+      with_items:
+        - apache2
+        - curl
+        - git
+        - mysql-server
+        - php5
+        - php5-mysql
+        - php5-gd
+        - python-mysqldb
+
+    - name: Configure php.ini allow_url_include
+      ini_file:
+        dest: /etc/php5/apache2/php.ini
+        section: PHP
+        option: allow_url_include
+        value: On
+      notify:
+        - Restart apache
+          
+    - name: Configure php.ini allow_url_fopen
+      ini_file:
+        dest: /etc/php5/apache2/php.ini
+        section: PHP
+        option: allow_url_fopen
+        value: On
+      notify:
+        - Restart apache
+
+    - name: Configure MySQL user
+      mysql_user:
+        name: root
+        password: p@ssw0rd
+        login_user: root
+        login_password: p@ssw0rd
+        check_implicit_admin: yes
+        host: "{{ item }}"
+      with_items:
+        - "{{ ansible_hostname }}"
+        - 127.0.0.1
+        - ::1
+        - localhost
+
+    - name: Remove index.html from Ubuntu
+      file: name=/var/www/html/index.html state=absent
+
+    - name: Download DVWA
+      git:
+        repo: https://github.com/RandomStorm/DVWA.git
+        dest: /var/www/html/
+        version: v1.9
+
+    - name: Set reCAPTCHA public key
+      lineinfile:
+        dest: /var/www/html/config/config.inc.php
+        line: "$_DVWA[ 'recaptcha_public_key' ]  = '{{ recaptcha_public }}';"
+        regexp: recaptcha_public_key
+
+    - name: Set reCAPTCHA private key
+      lineinfile:
+        dest: /var/www/html/config/config.inc.php
+        line: "$_DVWA[ 'recaptcha_private_key' ]  = '{{ recaptcha_private }}';"
+        regexp: recaptcha_private_key
+
+    - name: Fix perms on /var/www/html/hackable/uploads/
+      file: name=/var/www/html/hackable/uploads/ mode=777
+
+    - name: Fix perms on /var/www/html/external/phpids/0.6/lib/IDS/tmp/phpids_log.txt
+      file: name=/var/www/html/external/phpids/0.6/lib/IDS/tmp/phpids_log.txt mode=777
+
+  handlers:
+    - name: Restart apache
+      service: name=apache2 state=restarted
